@@ -88,13 +88,19 @@ python3 setup/TriAevum/tools/mm3d/package/mm3d_setup.py \
   --ar "$NDK_BIN/llvm-ar" \
   --support-library "$SUPPORT_LIBRARY" \
   --jobs 2
+python3 tools/android/prepare_mm3d_android_data.py \
+  --installation "$HOME/mm3d-android-data" \
+  --output "$HOME/mm3d-android-stage"
 ```
 
 Replace the example paths with local files. Do not copy ROM-derived data into
 the repository. This step only creates `private/mm3d_title_aot.so`; it does
 **not** yet build an MM3D APK, select the MM3D process manifest from the Android
-Activity, import user data in-app, or prove gameplay on a device. Runtime/title
-selection and packaging are later porting milestones.
+Activity, import user data in-app, or prove gameplay on a device. The data-stage
+tool verifies the MM3D process manifest and hashes, relocates its ROM-derived
+inputs into app-private staging, and creates the Android launch profile. It does
+not package the data into the APK. Runtime/title selection and APK packaging are
+later porting milestones.
 
 The isolated [Azahar controls library](controls/README.md) imports the original
 overlay and controller artwork with a narrow native-3DS input adapter. Its AAR
