@@ -67,12 +67,14 @@ from the selected device, preserving the existing Vulkan render-pass semantics.
 The link probe exercises real renderer construction and CPU shader compilation;
 it does not create an Android window or present a game frame.
 
-## Majora's Mask 3D title-module cross-build (first porting milestone)
+## Majora's Mask 3D module and private APK flow
 
 The MM3D ROM-preparation pipeline can now target `aarch64-linux-android29` and
-emit an ARM64 Android title plugin. First build the NDK whole-AOT support archive
-with `scripts/build-android-native.sh`, then locate it in that build tree. From a
-prepared MM3D setup package (which contains the recipe and `include/`):
+emit an ARM64 Android title plugin. Its APK name is `libmm3d_title_aot.so`,
+distinct from the generic/OoT module name, so the launcher refuses the wrong game.
+First build the NDK whole-AOT support archive with `scripts/build-android-native.sh`,
+then locate it in that build tree. From a prepared MM3D setup package (which contains
+the recipe and `include/`):
 
 ```sh
 export ANDROID_NDK_HOME="$HOME/triaevum-android-tools/android-ndk-r29"
@@ -91,16 +93,49 @@ python3 setup/TriAevum/tools/mm3d/package/mm3d_setup.py \
 python3 tools/android/prepare_mm3d_android_data.py \
   --installation "$HOME/mm3d-android-data" \
   --output "$HOME/mm3d-android-stage"
+python3 tools/android/package_mm3d_android_data.py \
+  --stage "$HOME/mm3d-android-stage" \
+  --output "$HOME/mm3d-android-data.zip"
 ```
 
 Replace the example paths with local files. Do not copy ROM-derived data into
-the repository. This step only creates `private/mm3d_title_aot.so`; it does
-**not** yet build an MM3D APK, select the MM3D process manifest from the Android
-Activity, import user data in-app, or prove gameplay on a device. The data-stage
-tool verifies the MM3D process manifest and hashes, relocates its ROM-derived
-inputs into app-private staging, and creates the Android launch profile. It does
-not package the data into the APK. Runtime/title selection and APK packaging are
-later porting milestones.
+the repository. This produces `private/mm3d_title_aot.so`, relocatable app data
+and a private transfer ZIP; the ZIP deliberately excludes native modules, saves
+and renderer caches.
+
+Build the shared Android runtime and the developer APK separately. These commands
+follow the Android runtime's qualified NDK/CMake/Gradle toolchain; the complete
+APK flow has not yet been run in this sandbox:
+
+```sh
+SRC="$PWD"
+BUILD="$HOME/triaevum-android-build/mm3d"
+NDK="$ANDROID_NDK_HOME"
+cmake -S "$SRC/ports/android/runtime" -B "$BUILD/runtime" -G Ninja \
+  -DCMAKE_TOOLCHAIN_FILE="$NDK/build/cmake/android.toolchain.cmake" \
+  -DANDROID_ABI=arm64-v8a -DANDROID_PLATFORM=android-29 \
+  -DANDROID_STL=c++_shared -DCMAKE_BUILD_TYPE=Release
+cmake --build "$BUILD/runtime" --target oot3d_native_game --parallel 2
+SDL_SOURCE="$BUILD/runtime/_deps/sdl2-src"
+python3 "$SRC/tools/android/stage_native_app.py" \
+  --runtime-build "$BUILD/runtime" \
+  --title-module "$HOME/mm3d-android-data/private/mm3d_title_aot.so" \
+  --title-library-name libmm3d_title_aot.so --ndk "$NDK" \
+  --output "$BUILD/mm3d-apk-libs"
+gradle -p "$SRC/ports/android" :app:assembleDebug \
+  -PtriaevumSdlSource="$SDL_SOURCE" \
+  -PtriaevumNativeStage="$BUILD/mm3d-apk-libs" \
+  -PtriaevumTitleLibrary=libmm3d_title_aot.so --no-daemon --max-workers=2
+```
+
+Install `ports/android/app/build/outputs/apk/debug/app-debug.apk`, then use the
+launcher to choose `mm3d-android-data.zip` from Downloads or another document
+provider. The transfer ZIP contains private game data; do not publish or share
+it, and remove it from shared storage after import if it is no longer needed. The app validates the title ID, launch
+arguments, code hash, ROMFS bounds and ZIP paths before atomically replacing its
+private `mm3d-data` directory; existing save/config/cache state is preserved.
+Game data is **not** included in APK assets. Import/launch code is implemented but
+still needs an Android SDK/Gradle build and real-device verification.
 
 The isolated [Azahar controls library](controls/README.md) imports the original
 overlay and controller artwork with a narrow native-3DS input adapter. Its AAR

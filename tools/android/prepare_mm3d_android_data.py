@@ -78,7 +78,7 @@ def _copy_tree(root: Path, source: Path, output: Path) -> str:
 def prepare(installation: Path, output: Path, *, manifest_file: str = "process-manifest.json") -> Path:
     root = installation.resolve()
     output = output.resolve()
-    repository = Path(__file__).resolve().parents[1]
+    repository = Path(__file__).resolve().parents[2]
     if output == repository or output.is_relative_to(repository):
         raise ValueError("Private ROM-derived data must remain outside the source repository")
     if output == root or output.is_relative_to(root) or root.is_relative_to(output):

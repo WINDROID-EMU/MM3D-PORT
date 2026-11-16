@@ -1,11 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
     <uses-feature android:name="android.hardware.vulkan.level" android:version="1" android:required="true" />
-    <application android:label="TriAevum" android:theme="@android:style/Theme.Material.NoActionBar.Fullscreen"
+    <application android:label="Majora's Mask 3D (TriAevum)" android:theme="@android:style/Theme.Material.NoActionBar.Fullscreen"
         android:allowBackup="false">
-        <activity android:name=".TriAevumActivity" android:exported="true"
+        <activity android:name=".TriAevumActivity" android:exported="false"
             android:screenOrientation="sensorLandscape"
             android:configChanges="keyboard|keyboardHidden|orientation|screenLayout|screenSize|smallestScreenSize|uiMode|navigation|density">
+        </activity>
+        <activity android:name=".TriAevumLauncherActivity" android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />

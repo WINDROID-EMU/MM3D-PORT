@@ -7,15 +7,18 @@ import shutil
 import subprocess
 
 
-def stage(runtime: Path, title: Path, ndk: Path, output: Path) -> None:
+def stage(runtime: Path, title: Path, ndk: Path, output: Path,
+          title_library_name: str = "libtriaevum_title_aot.so") -> None:
+    if title_library_name not in ("libtriaevum_title_aot.so", "libmm3d_title_aot.so"):
+        raise ValueError(f"Unsupported title-library name: {title_library_name}")
     llvm = ndk / "toolchains/llvm/prebuilt/linux-x86_64"
     source = {
         "libSDL2.so": runtime / "_deps/sdl2-build/libSDL2.so",
         "libTriAevum.so": runtime / "product/libTriAevum.so",
         "libtriaevum_title_bootstrap.so": runtime / "product/libtriaevum_title_bootstrap.so",
-        "libtriaevum_title_aot.so": title,
         "libc++_shared.so": llvm / "sysroot/usr/lib/aarch64-linux-android/libc++_shared.so",
     }
+    source[title_library_name] = title
     for name, path in source.items():
         if not path.is_file():
             raise FileNotFoundError(f"{name}: {path}")
@@ -47,5 +50,7 @@ if __name__ == "__main__":
     parser.add_argument("--title-module", type=Path, required=True)
     parser.add_argument("--ndk", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
+    parser.add_argument("--title-library-name", choices=("libtriaevum_title_aot.so", "libmm3d_title_aot.so"),
+                        default="libtriaevum_title_aot.so")
     args = parser.parse_args()
-    stage(args.runtime_build, args.title_module, args.ndk, args.output)
+    stage(args.runtime_build, args.title_module, args.ndk, args.output, args.title_library_name)

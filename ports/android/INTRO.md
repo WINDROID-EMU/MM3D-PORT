@@ -12,6 +12,11 @@ explicit packaged-title loading, app-local paths/logs, landscape orientation,
 keep-screen-on, private prepared-data staging, separate native/APK builds.
 Native libraries are installed by Android, never executed from writable game data.
 
+MM3D branch additions: an NDK ARM64 title target, private data staging, a filtered
+transfer ZIP and a SAF-based launcher importer with MM3D title/hash validation.
+These additions are not covered by the historical OOT3D device evidence below;
+the Android Java/Gradle build and MM3D gameplay have not yet been revalidated.
+
 2026-09-09 measured on SM-S931B / Adreno 830:
 
 - Full 256-shard / 12,419-function title linked. Temporary `-O0 -g0` title build
@@ -89,8 +94,8 @@ Reproduce with the same profile/capture interval before changing instrumentation
 verify `RecreateSwapchain` and pipeline creation disappear from steady-state
 profiles, compare guest/presentation counts, and confirm correct native output.
 Only then disable the costly effective-shader inventory for normal playback
-benchmarks. The current Android activity is a bounded developer test, not the
-final user-facing launcher.
+benchmarks. This paragraph describes the historical OOT3D developer flow; the
+MM3D launcher/importer is a separate, unverified branch addition, not a release.
 
 ### Device Rejection And Second Invalidation Path
 

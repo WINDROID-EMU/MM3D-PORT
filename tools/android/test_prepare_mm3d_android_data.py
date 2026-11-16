@@ -102,6 +102,15 @@ class Mm3dAndroidDataTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "separate staging directory"):
                 prepare(install, install / "stage")
 
+    def test_refuses_private_rom_data_inside_repository(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            install = self.fixture(Path(temporary))
+            repository = Path(__file__).resolve().parents[2]
+            output = repository / ".mm3d-data-test-must-not-be-created"
+            with self.assertRaisesRegex(ValueError, "outside the source repository"):
+                prepare(install, output)
+            self.assertFalse(output.exists())
+
 
 if __name__ == "__main__":
     unittest.main()

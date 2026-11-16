@@ -13,9 +13,14 @@ import android.view.WindowManager;
 
 /** SDL owns Surface/lifecycle. Game, renderer and title loading retain their native owners. */
 public final class TriAevumActivity extends SDLActivity {
+    private File gameDataRoot() {
+        File root = getExternalFilesDir(null);
+        return new File(root != null ? root : getFilesDir(), "mm3d-data");
+    }
+
     @Override protected SDLSurface createSDLSurface(Context context) {
         int maximumShortEdge = 720;
-        File config = new File(getExternalFilesDir(null), "TriAevum.android.host.json");
+        File config = new File(gameDataRoot(), "TriAevum.android.host.json");
         if (config.isFile()) {
             try {
                 maximumShortEdge = new JSONObject(new String(Files.readAllBytes(config.toPath()), StandardCharsets.UTF_8))
@@ -39,11 +44,11 @@ public final class TriAevumActivity extends SDLActivity {
     }
 
     @Override protected String[] getArguments() {
-        File root = getExternalFilesDir(null);
+        File root = gameDataRoot();
         return new String[] {
             "--launch-profile", new File(root, "TriAevum.android.launch.json").getAbsolutePath(),
             "--title-plugin", new File(getApplicationInfo().nativeLibraryDir,
-                "libtriaevum_title_aot.so").getAbsolutePath()
+                "libmm3d_title_aot.so").getAbsolutePath()
         };
     }
 }
