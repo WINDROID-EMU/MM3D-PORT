@@ -318,10 +318,16 @@ def compile_title(work: Path, args, platform: str) -> Path:
     step("Compiling the native game module (the longest step: 10-40 minutes)")
     env = dict(os.environ, MM3D_TARGET=platform, MM3D_CXX=str(args.cxx), MM3D_AR=str(args.ar),
                MM3D_WORK=str(work))
-    support = HERE / "lib" / ("libtriaevum_title_whole_aot_support.a")
+    support = args.support_library or (HERE / "lib" / "libtriaevum_title_whole_aot_support.a")
+    if platform == "android" and args.support_library is None:
+        fail("Android builds require --support-library pointing to the ARM64 Android NDK archive.")
+    if not support.is_file():
+        fail(f"The whole-AOT support library does not exist: {support}")
     run([sys.executable, MM3D / "mm3d_build_title.py", work, support, HERE / "include", str(args.jobs)], env=env)
-    suffix = ".dll" if platform == "mingw" else ".so"
-    plugins = sorted((work / "aot-cache/plugins").glob(f"*/triaevum_title_aot{suffix}"),
+    plugin_name = ("libtriaevum_title_aot.so" if platform == "android" else
+                   "triaevum_title_aot.dll" if platform == "mingw" else
+                   "triaevum_title_aot.so")
+    plugins = sorted((work / "aot-cache/plugins").glob(f"*/{plugin_name}"),
                      key=lambda p: p.stat().st_mtime)
     if not plugins:
         fail("The game module was not produced.")
@@ -334,9 +340,11 @@ def main() -> int:
     parser.add_argument("--rom")
     parser.add_argument("--cxx", type=Path, required=True)
     parser.add_argument("--ar", type=Path, required=True)
+    parser.add_argument("--support-library", type=Path,
+                        help="whole-AOT support archive for the selected target (required for Android)")
     parser.add_argument("--jobs", type=int, default=default_jobs())
     parser.add_argument("--no-shader-tour", action="store_true")
-    parser.add_argument("--target", choices=("mingw", "linux"),
+    parser.add_argument("--target", choices=("mingw", "linux", "android"),
                         default="mingw" if sys.platform == "win32" else "linux")
     args = parser.parse_args()
     install = args.install.resolve()
@@ -419,7 +427,9 @@ def main() -> int:
     (install / "setup_done.json").write_text(json.dumps(
         {"version": version, "module": target.name, "seconds": round(time.time() - started)}, indent=1))
     step(f"Game ready in {round((time.time() - started) / 60)} minutes.")
-    if not args.no_shader_tour:
+    if platform == "android":
+        step("Skipping the desktop shader tour for the Android title module")
+    elif not args.no_shader_tour:
         step("Shader tour: Link visits every area once so they never stutter the first time.\n"
              "  The game opens and closes by itself many times: THIS IS NORMAL, it is not a bug.\n"
              "  Closing this window skips it (the game works anyway; run BuildShaders later to finish it).")

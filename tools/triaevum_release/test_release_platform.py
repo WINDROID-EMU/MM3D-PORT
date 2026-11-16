@@ -12,7 +12,7 @@ import forge
 import forge_gui
 import precompiled_titles
 from common import atomic_write_json, sha256_file
-from release_platform import WINDOWS, LINUX, catalog_platform, for_target
+from release_platform import ANDROID, WINDOWS, LINUX, catalog_platform, for_target
 
 
 class ReleasePlatformTests(unittest.TestCase):
@@ -30,6 +30,8 @@ class ReleasePlatformTests(unittest.TestCase):
     def test_legacy_windows_and_explicit_linux(self):
         self.assertEqual(catalog_platform({}), WINDOWS)
         self.assertEqual(catalog_platform({"target": LINUX.target}), LINUX)
+        self.assertEqual(for_target(ANDROID.target), ANDROID)
+        self.assertEqual(ANDROID.target, "aarch64-linux-android29")
         with self.assertRaises(ValueError):
             for_target("aarch64-unknown-linux-gnu")
 

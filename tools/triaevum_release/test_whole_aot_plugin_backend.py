@@ -12,6 +12,14 @@ import whole_aot_plugin_backend as backend
 
 
 class WholeAotPluginBackendTests(unittest.TestCase):
+    def test_android_link_uses_ndk_runtime_and_16k_page_alignment(self) -> None:
+        arguments = backend._elf_plugin_link_arguments(release_platform.ANDROID)
+        self.assertIn("-shared", arguments)
+        self.assertIn("-Wl,-z,max-page-size=16384", arguments)
+        self.assertIn("-Wl,--no-undefined", arguments)
+        self.assertNotIn("-static-libstdc++", arguments)
+        self.assertNotIn("-static-libgcc", arguments)
+
     def test_builds_and_reuses_content_addressed_plugin(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)

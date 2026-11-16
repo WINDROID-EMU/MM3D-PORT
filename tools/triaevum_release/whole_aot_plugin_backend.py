@@ -111,6 +111,24 @@ def _run(arguments: Sequence[str], cwd: Path, label: str) -> None:
     )
 
 
+def _elf_plugin_link_arguments(platform: release_platform.ReleasePlatform) -> tuple[str, ...]:
+    """Return ELF linker policy; Android uses the NDK C++ runtime."""
+    android = release_platform.is_android(platform)
+    return (
+        "-shared",
+        "-fuse-ld=lld",
+        "-flto=thin",
+        *(tuple() if android else ("-static-libstdc++", "-static-libgcc")),
+        "-Wl,--gc-sections",
+        "-Wl,--icf=all",
+        "-Wl,-Bsymbolic",
+        "-Wl,--exclude-libs,ALL",
+        "-Wl,--no-undefined",
+        "-Wl,--build-id=sha1",
+        *(("-Wl,-z,max-page-size=16384",) if android else tuple()),
+    )
+
+
 def _load_generator() -> tuple[Any, Path, Path]:
     if str(A32_ROOT) not in sys.path:
         sys.path.insert(0, str(A32_ROOT))
@@ -440,17 +458,7 @@ def build_whole_aot_plugin(
                 link_command = (
                     str(compiler),
                     *cxx_driver_arguments(toolchain.target_triple),
-                    "-shared",
-                    "-fuse-ld=lld",
-                    "-flto=thin",
-                    "-static-libstdc++",
-                    "-static-libgcc",
-                    "-Wl,--gc-sections",
-                    "-Wl,--icf=all",
-                    "-Wl,-Bsymbolic",
-                    "-Wl,--exclude-libs,ALL",
-                    "-Wl,--no-undefined",
-                    "-Wl,--build-id=sha1",
+                    *_elf_plugin_link_arguments(toolchain.platform),
                     "-o", str(linked),
                     str(wrapper_object),
                     str(archive_path),

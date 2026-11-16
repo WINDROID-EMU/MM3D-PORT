@@ -34,6 +34,10 @@ LINUX = ReleasePlatform("x86_64-unknown-linux-gnu", "TriAevum",
                         "TriAevumForge", "forge/oot3d_game_module.so",
                         "triaevum_title_aot.so", "x86_64-linux-thinlto-release-v1",
                         "clang++", "llvm-ar", "libtriaevum_title_whole_aot_support.a", ".tar.gz")
+ANDROID = ReleasePlatform("aarch64-linux-android29", "libTriAevum.so", "",
+                          "libtriaevum_title_bootstrap.so", "libtriaevum_title_aot.so",
+                          "aarch64-android29-thinlto-v1", "aarch64-linux-android29-clang++",
+                          "llvm-ar", "libtriaevum_title_whole_aot_support.a", ".apk")
 
 
 def is_windows(value: ReleasePlatform) -> bool:
@@ -45,8 +49,12 @@ def is_mingw(value: ReleasePlatform) -> bool:
     return value == MINGW
 
 
+def is_android(value: ReleasePlatform) -> bool:
+    return value == ANDROID
+
+
 def for_target(target: str) -> ReleasePlatform:
-    for item in (WINDOWS, MINGW, LINUX):
+    for item in (WINDOWS, MINGW, LINUX, ANDROID):
         if target == item.target:
             return item
     raise ValueError(f"Unsupported release target: {target}")

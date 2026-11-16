@@ -67,6 +67,35 @@ from the selected device, preserving the existing Vulkan render-pass semantics.
 The link probe exercises real renderer construction and CPU shader compilation;
 it does not create an Android window or present a game frame.
 
+## Majora's Mask 3D title-module cross-build (first porting milestone)
+
+The MM3D ROM-preparation pipeline can now target `aarch64-linux-android29` and
+emit an ARM64 Android title plugin. First build the NDK whole-AOT support archive
+with `scripts/build-android-native.sh`, then locate it in that build tree. From a
+prepared MM3D setup package (which contains the recipe and `include/`):
+
+```sh
+export ANDROID_NDK_HOME="$HOME/triaevum-android-tools/android-ndk-r29"
+export TRIAEVUM_BUILD_DIR="$HOME/triaevum-android-build/arm64"
+bash scripts/build-android-native.sh
+NDK_BIN="$ANDROID_NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin"
+SUPPORT_LIBRARY="$(find "$TRIAEVUM_BUILD_DIR" -name libtriaevum_title_whole_aot_support.a -print -quit)"
+python3 setup/TriAevum/tools/mm3d/package/mm3d_setup.py \
+  --install "$HOME/mm3d-android-data" \
+  --rom "$HOME/ROMs/MM3D-USA-v1.1.3ds" \
+  --target android \
+  --cxx "$NDK_BIN/aarch64-linux-android29-clang++" \
+  --ar "$NDK_BIN/llvm-ar" \
+  --support-library "$SUPPORT_LIBRARY" \
+  --jobs 2
+```
+
+Replace the example paths with local files. Do not copy ROM-derived data into
+the repository. This step only creates `private/mm3d_title_aot.so`; it does
+**not** yet build an MM3D APK, select the MM3D process manifest from the Android
+Activity, import user data in-app, or prove gameplay on a device. Runtime/title
+selection and packaging are later porting milestones.
+
 The isolated [Azahar controls library](controls/README.md) imports the original
 overlay and controller artwork with a narrow native-3DS input adapter. Its AAR
 and adapter tests build independently of all C++ title/renderer compilation.

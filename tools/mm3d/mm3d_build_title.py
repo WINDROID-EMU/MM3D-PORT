@@ -1,7 +1,7 @@
 """Compile the MM3D whole-AOT program into a TriAevum title module.
 
 usage: mm3d_build_title.py <work> <support library> <nlohmann include> [jobs]
-Environment: MM3D_TARGET=linux (default) or mingw (Windows DLL, llvm-mingw);
+Environment: MM3D_TARGET=linux (default), mingw (Windows DLL), or android (NDK ARM64);
 MM3D_CXX / MM3D_AR select the compiler and archiver.
 """
 from __future__ import annotations
@@ -23,7 +23,14 @@ def main() -> int:
     nlohmann = Path(sys.argv[3])
     jobs = int(sys.argv[4]) if len(sys.argv) > 4 else 8
     target = os.environ.get("MM3D_TARGET", "linux")
-    platform = release_platform.MINGW if target == "mingw" else release_platform.LINUX
+    platforms = {
+        "mingw": release_platform.MINGW,
+        "linux": release_platform.LINUX,
+        "android": release_platform.ANDROID,
+    }
+    if target not in platforms:
+        raise ValueError(f"unsupported MM3D target: {target}")
+    platform = platforms[target]
     default_cxx, default_ar = ("/usr/bin/clang++", "/usr/bin/llvm-ar")
     result = build_whole_aot_plugin(
         program_path=work / "aot_program.json",
