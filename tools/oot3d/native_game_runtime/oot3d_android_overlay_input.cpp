@@ -37,9 +37,16 @@ void AndroidOverlayInputState::SetTouch(float x, float y, bool pressed) noexcept
     mState.TouchPressed = pressed;
 }
 
+void AndroidOverlayInputState::SetScreenSwap(bool enabled) noexcept {
+    std::lock_guard lock(mMutex);
+    mState.ScreensSwapped = enabled;
+}
+
 void AndroidOverlayInputState::ReleaseAll() noexcept {
     std::lock_guard lock(mMutex);
+    const bool screensSwapped = mState.ScreensSwapped;
     mState = {};
+    mState.ScreensSwapped = screensSwapped;
 }
 
 AndroidOverlayInputSnapshot AndroidOverlayInputState::Snapshot() const noexcept {

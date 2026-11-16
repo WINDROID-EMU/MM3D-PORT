@@ -142,6 +142,12 @@ class InputOverlayDrawableButton(
         overlay.hapticFeedback(HapticFeedbackConstants.VIRTUAL_KEY_RELEASE)
     }
 
+    fun release() {
+        pressedState = false
+        isMotionFirstButton = false
+        trackId = -1
+    }
+
     fun onConfigureTouch(event: MotionEvent): Boolean {
         val pointerIndex = event.actionIndex
         val fingerPositionX = event.getX(pointerIndex).toInt()

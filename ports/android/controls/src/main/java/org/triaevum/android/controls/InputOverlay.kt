@@ -17,7 +17,6 @@ import android.graphics.drawable.VectorDrawable
 import android.util.AttributeSet
 import android.util.DisplayMetrics
 import android.view.MotionEvent
-import android.view.SurfaceView
 import android.view.View
 import android.view.View.OnTouchListener
 import androidx.core.content.ContextCompat
@@ -26,13 +25,12 @@ import java.lang.NullPointerException
 import kotlin.math.min
 
 /**
- * Draws the interactive input overlay on top of the
- * [SurfaceView] that is rendering emulation.
+ * Draws the interactive input overlay as a normal [View] above SDL's surface.
  *
  * @param context The current [Context].
  * @param attrs   [AttributeSet] for parsing XML attributes.
  */
-class InputOverlay(context: Context?, attrs: AttributeSet?) : SurfaceView(context, attrs),
+class InputOverlay(context: Context?, attrs: AttributeSet?) : View(context, attrs),
     OnTouchListener {
     private val overlayButtons: MutableSet<InputOverlayDrawableButton> = HashSet()
     private val overlayDpads: MutableSet<InputOverlayDrawableDpad> = HashSet()
@@ -93,6 +91,10 @@ class InputOverlay(context: Context?, attrs: AttributeSet?) : SurfaceView(contex
         }
 
         val motionEvent = event.action and MotionEvent.ACTION_MASK
+        if (motionEvent == MotionEvent.ACTION_CANCEL) {
+            releaseAllInput()
+            return true
+        }
         val isActionDown =
             motionEvent == MotionEvent.ACTION_DOWN || motionEvent == MotionEvent.ACTION_POINTER_DOWN
         val isActionMove = motionEvent == MotionEvent.ACTION_MOVE
@@ -279,6 +281,16 @@ class InputOverlay(context: Context?, attrs: AttributeSet?) : SurfaceView(contex
 
         }
         return true
+    }
+
+    fun releaseAllInput() {
+        overlayButtons.forEach { it.release() }
+        overlayDpads.forEach { it.release() }
+        overlayJoysticks.forEach { it.release() }
+        touchscreenPointerId = -1
+        OverlayHost.releaseAll()
+        OverlayHost.onTouchEvent(0f, 0f, false)
+        invalidate()
     }
 
     fun onTouchWhileEditing(event: MotionEvent): Boolean {
@@ -566,6 +578,8 @@ class InputOverlay(context: Context?, attrs: AttributeSet?) : SurfaceView(contex
     }
 
     fun refreshControls() {
+        // Do not discard drawable pointer IDs while their native HID state is held.
+        releaseAllInput()
         // Remove all the overlay buttons from the HashSet.
         overlayButtons.clear()
         overlayDpads.clear()

@@ -25,6 +25,12 @@ Java_org_triaevum_android_AndroidOverlayBridge_nativeSetTouch(
 }
 
 extern "C" JNIEXPORT void JNICALL
+Java_org_triaevum_android_AndroidOverlayBridge_nativeSetScreenSwap(
+    JNIEnv*, jclass, jboolean enabled) {
+    Oot3dNativeGame::GetAndroidOverlayInputState().SetScreenSwap(enabled == JNI_TRUE);
+}
+
+extern "C" JNIEXPORT void JNICALL
 Java_org_triaevum_android_AndroidOverlayBridge_nativeReleaseAll(
     JNIEnv*, jclass) {
     Oot3dNativeGame::GetAndroidOverlayInputState().ReleaseAll();

@@ -183,6 +183,20 @@ class InputOverlayDrawableJoystick(
         return false
     }
 
+    fun release() {
+        pressedState = false
+        xAxis = 0.0f
+        yAxis = 0.0f
+        angle = 0.0f
+        radius = 0.0f
+        outerBitmap.alpha = opacity
+        boundsBoxBitmap.alpha = 0
+        virtBounds = Rect(origBounds.left, origBounds.top, origBounds.right, origBounds.bottom)
+        bounds = Rect(origBounds.left, origBounds.top, origBounds.right, origBounds.bottom)
+        setInnerBounds()
+        trackId = -1
+    }
+
     fun onConfigureTouch(event: MotionEvent): Boolean {
         val pointerIndex = event.actionIndex
         val fingerPositionX = event.getX(pointerIndex).toInt()

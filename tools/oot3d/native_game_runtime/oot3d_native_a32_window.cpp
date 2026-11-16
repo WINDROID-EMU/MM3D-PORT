@@ -5472,6 +5472,9 @@ void RunOot3dNativeA32Window(const Oot3dNativeGameLaunch &launch) {
     }
   }
   bool screenLayoutKeyWasDown = false;
+#ifdef __ANDROID__
+  bool overlayScreenSwapWasEnabled = false;
+#endif
   Oot3dNativeGame::TriAevumScreenPlacements screenPlacements;
   std::optional<Oot3dNativeGame::Oot3dPicaDisplayTransferSubmission>
       lastLowerScreenTransfer;
@@ -6183,6 +6186,16 @@ void RunOot3dNativeA32Window(const Oot3dNativeGameLaunch &launch) {
         screenLayout = Oot3dNativeGame::NextTriAevumScreenLayout(screenLayout);
       }
       screenLayoutKeyWasDown = screenLayoutKeyDown;
+#ifdef __ANDROID__
+      const bool overlayScreenSwapEnabled =
+          GetAndroidOverlayInputState().Snapshot().ScreensSwapped;
+      if (overlayScreenSwapEnabled != overlayScreenSwapWasEnabled) {
+        screenLayout = overlayScreenSwapEnabled
+                           ? Oot3dNativeGame::TriAevumScreenLayout::LowerFocus
+                           : Oot3dNativeGame::TriAevumScreenLayout::SingleScreen;
+        overlayScreenSwapWasEnabled = overlayScreenSwapEnabled;
+      }
+#endif
       // Single screen: F4 shows/hides the whole lower screen. (The
       // touch-screen buttons are bindable controls, see ApplyMm3dMenuButtons.)
       static bool overlayKeyWasDown = false;

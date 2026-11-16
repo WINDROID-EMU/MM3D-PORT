@@ -219,6 +219,14 @@ class InputOverlayDrawableDpad(
         defaultStateBitmap.draw(canvas)
     }
 
+    fun release() {
+        trackId = -1
+        upButtonState = false
+        downButtonState = false
+        leftButtonState = false
+        rightButtonState = false
+    }
+
     val upStatus: Int
         get() = if (upButtonState) {
             AzaharButtonState.PRESSED

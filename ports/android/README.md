@@ -141,16 +141,20 @@ Game data is **not** included in APK assets. Import/launch code is implemented b
 still needs an Android SDK/Gradle build and real-device verification.
 
 The isolated [Azahar controls library](controls/README.md) imports the original
-overlay and controller artwork with a narrow native-3DS input adapter. The Android
-runtime now has a thread-safe JNI/HID input bridge for buttons, both sticks and
-normalized touch, consumed on the game polling thread while preserving physical
-controller state. Host-side tests cover button edges, axis clamping, release,
-combination with held physical buttons and preservation of physical axes while
-the virtual source is neutral.
-The APK still does not bind the Azahar view/lifecycle to this bridge; transparent
-surface composition, cancel/pause handling, settings and device multitouch remain
-the next integration milestone. Its AAR and adapter tests build independently of
-all C++ title/renderer compilation.
+overlay and controller artwork. `TriAevumActivity` now binds it as a normal
+transparent `View` above SDL and connects button, both sticks and touch callbacks
+through JNI to the game-thread HID merge, preserving physical controller state.
+Native touch conversion still applies the runtime's active MM3D screen/layout
+transform. HOME closes the game Activity; screen swap toggles between the existing
+`SingleScreen` and `LowerFocus` layouts. `ACTION_CANCEL`, pause, focus loss and
+teardown release virtual input. Turbo remains explicitly unimplemented, and the
+in-app overlay settings/editor menu is not connected.
+
+Host tests cover button edges, axis clamping, screen-swap persistence across
+release, combination with held physical buttons and preservation of physical axes
+while the virtual source is neutral. The app/Activity wiring has not yet been built
+with Android Gradle or verified on a device; composition, rotation and multitouch
+remain hardware validation gates.
 
 Run the platform-independent bridge test with:
 
@@ -161,8 +165,8 @@ g++ -std=c++20 -Wall -Wextra -Werror -pthread -I tools/three_ds/input \
   -o /tmp/oot3d_android_overlay_input_tests
 /tmp/oot3d_android_overlay_input_tests
 ```
-The SDL APK host exists; live-game overlay integration is deliberately deferred
-until title-intro playback works.
+The SDL APK host and overlay bridge are wired; live Android input remains
+unqualified until the integrated APK is built and exercised on hardware.
 
 ## Device Verification
 

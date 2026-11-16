@@ -32,12 +32,16 @@ int main() {
     Require(sample.TouchX == 0.0F && sample.TouchY == 1.0F && sample.TouchPressed,
             "touch coordinates are clamped and retain press state");
 
+    state.SetScreenSwap(true);
     state.ReleaseAll();
     sample = state.Snapshot();
     Require(sample.Buttons == 0 && sample.CirclePadX == 0.0F &&
                 sample.CirclePadY == 0.0F && sample.CStickX == 0.0F &&
-                sample.CStickY == 0.0F && !sample.TouchPressed,
-            "release clears the overlay source without changing other input owners");
+                sample.CStickY == 0.0F && !sample.TouchPressed && sample.ScreensSwapped,
+            "release clears active controls but preserves the screen-swap preference");
+    state.SetScreenSwap(false);
+    Require(!state.Snapshot().ScreensSwapped,
+            "screen-swap preference can be explicitly restored");
 
     ThreeDsRecomp::Input::InputFrame physicalFrame;
     physicalFrame.Hid.Buttons = ThreeDsRecomp::Input::ButtonMask(

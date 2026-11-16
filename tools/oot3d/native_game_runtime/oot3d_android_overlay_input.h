@@ -18,6 +18,7 @@ struct AndroidOverlayInputSnapshot {
     float TouchX = 0.0F;
     float TouchY = 0.0F;
     bool TouchPressed = false;
+    bool ScreensSwapped = false;
 };
 
 class AndroidOverlayInputState {
@@ -25,6 +26,7 @@ public:
     void SetButton(uint32_t mask, bool pressed) noexcept;
     void SetSticks(float circleX, float circleY, float cStickX, float cStickY) noexcept;
     void SetTouch(float x, float y, bool pressed) noexcept;
+    void SetScreenSwap(bool enabled) noexcept;
     void ReleaseAll() noexcept;
     [[nodiscard]] AndroidOverlayInputSnapshot Snapshot() const noexcept;
 

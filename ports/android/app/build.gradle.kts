@@ -1,6 +1,9 @@
 plugins { id("com.android.application") }
 
-dependencies { testImplementation("junit:junit:4.13.2") }
+dependencies {
+    implementation(project(":controls"))
+    testImplementation("junit:junit:4.13.2")
+}
 
 // Native compilation is a separate incremental build, never a Gradle side effect.
 val sdlSource = providers.gradleProperty("triaevumSdlSource")

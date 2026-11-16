@@ -25,33 +25,36 @@ surface remains owned by TriAevum's Android host.
 
 ## Host Integration
 
-1. Implement `Native3dsInputTarget` against the existing native input owner.
-   Preserve event edges and merge overlay/controller sources there; never run
-   gameplay or renderer commands synchronously on the Android UI thread.
-2. Bind `OverlayHost` with an `AzaharInputAdapter` before constructing
-   `InputOverlay` with the activity context. Add it above the SDL game surface
-   with the original transparent overlay composition.
-3. Pixel touch callbacks are **not** normalized guest input. Apply the existing
-   inverse presentation/TopScreen transform, including letterboxing and aspect
-   ratio, before producing guest touchscreen coordinates. Never use a fixed
-   `x/width`, `y/height` full-window mapping for single-screen UI.
-4. The app must release input on cancel, loss of focus, pause, controller layout
-   changes and teardown, detach the old overlay before `unbind`, and reset the
-   donor pointer trackers before reusing the view. Rebind before resuming.
-5. Reuse donor preference keys and original editor operations for settings;
-   `setIsInEditMode`, `refreshControls`, `resetButtonPlacement` and
-   `EmulationMenuSettings` remain available.
+`TriAevumActivity` binds `OverlayHost` before constructing the imported overlay.
+The overlay is a normal transparent `View` above SDL's `SurfaceView`; it does not
+create a competing Android surface. `AndroidOverlayBridge` implements the donor
+`Native3dsInputTarget` and routes buttons, Circle Pad, C-stick and pointer pixels
+through JNI into the thread-safe native owner. Buttons/sticks merge with, rather
+than replace, physical controller state. The native touch mapper remains
+responsible for the live lower-screen/layout/letterbox transform; normalized
+overlay coordinates only identify a host-window pointer.
+
+The app releases virtual input on `ACTION_CANCEL`, pause, focus loss and teardown,
+resets drawable pointer/axis state, removes the view and unbinds the adapter. HOME
+closes the game Activity. Screen swap toggles between the runtime's existing
+`SingleScreen` and `LowerFocus` MM3D layouts. Turbo has no runtime implementation
+yet; the callback reports that limitation rather than pretending to accelerate.
+Donor edit operations and preference keys remain available, but no in-app control
+settings/editor menu is wired yet.
 
 ## Status And Remaining Work
 
-The AAR and four JVM adapter tests compile/pass on Linux (JDK 17, Gradle 8.13,
-AGP 8.13.2, Kotlin 2.0.20, API 35 SDK, min API 29). Offline tests also verify the
-donor hashes, resource closure and shared HID ABI. These tests do **not** verify
-real Android MotionEvents, overlay composition, layout-editor UI or gameplay.
+The imported controls library and four JVM adapter tests were previously verified
+on Linux (JDK 17, Gradle 8.13, AGP 8.13.2, Kotlin 2.0.20, API 35 SDK, min API 29).
+Host-side C++ tests cover HID merge, clamping and release. This environment does
+not currently have the Android SDK/Gradle/JDK compiler, so the new app/Activity
+composition has not been built here. No test verifies real Android MotionEvents,
+rendered composition or gameplay on hardware.
 
-Still required for a completed 1:1 in-game port: the APK/SDL host and JNI input
-consumer, donor settings-menu wiring, lifecycle/cancel integration, physical
-multitouch tests and visual comparison on the device. The imported donor's
+Still required before calling the Android port complete: a successful APK/SDL
+build, device validation of transparent composition and physical/virtual
+multitouch, donor settings/editor menu wiring, and a true turbo implementation.
+The imported donor's
 existing quirks are not silently changed: for example its joystick change
 notification compares both axes with `&&`; isolate and test any future fix,
 rather than claiming the adapter tests validate that gesture logic.
