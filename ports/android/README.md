@@ -138,8 +138,24 @@ Game data is **not** included in APK assets. Import/launch code is implemented b
 still needs an Android SDK/Gradle build and real-device verification.
 
 The isolated [Azahar controls library](controls/README.md) imports the original
-overlay and controller artwork with a narrow native-3DS input adapter. Its AAR
-and adapter tests build independently of all C++ title/renderer compilation.
+overlay and controller artwork with a narrow native-3DS input adapter. The Android
+runtime now has a thread-safe JNI/HID input bridge for buttons, both sticks and
+normalized touch, consumed on the game polling thread while preserving physical
+controller state. Host-side tests cover button edges, axis clamping and release.
+The APK still does not bind the Azahar view/lifecycle to this bridge; transparent
+surface composition, cancel/pause handling, settings and device multitouch remain
+the next integration milestone. Its AAR and adapter tests build independently of
+all C++ title/renderer compilation.
+
+Run the platform-independent bridge test with:
+
+```sh
+g++ -std=c++20 -Wall -Wextra -Werror -pthread \
+  tools/oot3d/native_game_runtime/oot3d_android_overlay_input.cpp \
+  tools/oot3d/native_game_runtime/oot3d_android_overlay_input_tests.cpp \
+  -o /tmp/oot3d_android_overlay_input_tests
+/tmp/oot3d_android_overlay_input_tests
+```
 The SDL APK host exists; live-game overlay integration is deliberately deferred
 until title-intro playback works.
 

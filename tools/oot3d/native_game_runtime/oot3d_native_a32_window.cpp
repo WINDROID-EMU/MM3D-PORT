@@ -1,4 +1,7 @@
 #include "oot3d_native_a32_window.h"
+#ifdef __ANDROID__
+#include "oot3d_android_overlay_input.h"
+#endif
 #include "three_ds_sdl_controller.h"
 #include "oot3d_prebackend_budget.h"
 #include "oot3d_cpu_phase_probe.h"
@@ -3193,6 +3196,24 @@ PollNativeA32Input(Fast::Fast3dWindow &window,
                                      &pollingState.RightStickProfile,
                                      guestRefreshWillConsume,
                                      &pollingState.VirtualMotion);
+#ifdef __ANDROID__
+  const auto androidOverlay = GetAndroidOverlayInputState().Snapshot();
+  frame.Hid.Buttons |= androidOverlay.Buttons;
+  constexpr float kNativeStickScale = 154.0F;
+  if (androidOverlay.CirclePadX != 0.0F || androidOverlay.CirclePadY != 0.0F) {
+    frame.Hid.CirclePadX = static_cast<int16_t>(std::lround(
+        androidOverlay.CirclePadX * kNativeStickScale));
+    frame.Hid.CirclePadY = static_cast<int16_t>(std::lround(
+        androidOverlay.CirclePadY * kNativeStickScale));
+  }
+  if (androidOverlay.CStickX != 0.0F || androidOverlay.CStickY != 0.0F) {
+    frame.CStick.X = static_cast<int16_t>(std::lround(
+        androidOverlay.CStickX * kNativeStickScale));
+    frame.CStick.Y = static_cast<int16_t>(std::lround(
+        androidOverlay.CStickY * kNativeStickScale));
+    frame.CStick.Kind = ThreeDsRecomp::Input::AxisInputKind::Absolute;
+  }
+#endif
   // Title touch actions, then the menu pages (bits 8-10).
   for (size_t index = static_cast<size_t>(kFirstNativeTitleAction);
        index < kNativeControlActionCount; ++index) {
@@ -3208,10 +3229,20 @@ PollNativeA32Input(Fast::Fast3dWindow &window,
       window.SetMouseCapture(false);
     }
     window.SetCursorVisibility(true);
-    const auto pointer = window.GetMousePos();
+    auto pointer = window.GetMousePos();
+    bool pointerPressed = window.GetMouseState(Ship::LUS_MOUSE_BTN_LEFT);
+#ifdef __ANDROID__
+    if (androidOverlay.TouchPressed) {
+      pointer.x = static_cast<int32_t>(std::lround(
+          androidOverlay.TouchX * static_cast<float>(window.GetWidth())));
+      pointer.y = static_cast<int32_t>(std::lround(
+          androidOverlay.TouchY * static_cast<float>(window.GetHeight())));
+      pointerPressed = true;
+    }
+#endif
     auto touch = Oot3dNativeGame::MapHostPointerToNativeA32Touch(
         pointer.x, pointer.y, window.GetWidth(), window.GetHeight(),
-        window.GetMouseState(Ship::LUS_MOUSE_BTN_LEFT),
+        pointerPressed,
         topScreenUiProfile
             ? Oot3dNativeGame::NativeA32TouchPresentation::TopScreen400x240
             : Oot3dNativeGame::NativeA32TouchPresentation::
@@ -3233,7 +3264,7 @@ PollNativeA32Input(Fast::Fast3dWindow &window,
           v * static_cast<float>(NativeA32TouchHeight), 0.0F,
           static_cast<float>(NativeA32TouchHeight - 1U)));
       touch.Pressed = touch.Inside &&
-                      window.GetMouseState(Ship::LUS_MOUSE_BTN_LEFT);
+                      pointerPressed;
     } else if (TriAevumLowerScreenTouchRectActive()) {
       // Parts of the lower screen shown elsewhere are touched through;
       // otherwise the lower screen is hidden.
@@ -3248,7 +3279,7 @@ PollNativeA32Input(Fast::Fast3dWindow &window,
         touch.Y = static_cast<uint16_t>(std::clamp(
             point->second * static_cast<float>(NativeA32TouchHeight), 0.0F,
             static_cast<float>(NativeA32TouchHeight - 1U)));
-        touch.Pressed = window.GetMouseState(Ship::LUS_MOUSE_BTN_LEFT);
+        touch.Pressed = pointerPressed;
       }
     }
     frame.Hid.TouchX = touch.X;

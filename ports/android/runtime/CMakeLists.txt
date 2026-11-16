@@ -24,5 +24,10 @@ if(TRIAEVUM_ANDROID_DEPENDENCY_SOURCE_CACHE)
 endif()
 get_filename_component(root "${CMAKE_CURRENT_SOURCE_DIR}/../../.." ABSOLUTE)
 add_subdirectory("${root}" product)
-target_sources(oot3d_native_game PRIVATE android_host.cpp)
-target_include_directories(oot3d_native_game PRIVATE "${CMAKE_CURRENT_LIST_DIR}")
+target_sources(oot3d_native_game PRIVATE
+    android_host.cpp
+    android_overlay_input_jni.cpp
+    "${root}/tools/oot3d/native_game_runtime/oot3d_android_overlay_input.cpp")
+target_include_directories(oot3d_native_game PRIVATE
+    "${CMAKE_CURRENT_LIST_DIR}"
+    "${root}/tools/oot3d/native_game_runtime")
