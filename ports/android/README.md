@@ -141,7 +141,9 @@ The isolated [Azahar controls library](controls/README.md) imports the original
 overlay and controller artwork with a narrow native-3DS input adapter. The Android
 runtime now has a thread-safe JNI/HID input bridge for buttons, both sticks and
 normalized touch, consumed on the game polling thread while preserving physical
-controller state. Host-side tests cover button edges, axis clamping and release.
+controller state. Host-side tests cover button edges, axis clamping, release,
+combination with held physical buttons and preservation of physical axes while
+the virtual source is neutral.
 The APK still does not bind the Azahar view/lifecycle to this bridge; transparent
 surface composition, cancel/pause handling, settings and device multitouch remain
 the next integration milestone. Its AAR and adapter tests build independently of
@@ -150,7 +152,7 @@ all C++ title/renderer compilation.
 Run the platform-independent bridge test with:
 
 ```sh
-g++ -std=c++20 -Wall -Wextra -Werror -pthread \
+g++ -std=c++20 -Wall -Wextra -Werror -pthread -I tools/three_ds/input \
   tools/oot3d/native_game_runtime/oot3d_android_overlay_input.cpp \
   tools/oot3d/native_game_runtime/oot3d_android_overlay_input_tests.cpp \
   -o /tmp/oot3d_android_overlay_input_tests

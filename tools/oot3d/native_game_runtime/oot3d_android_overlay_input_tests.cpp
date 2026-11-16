@@ -38,5 +38,39 @@ int main() {
                 sample.CirclePadY == 0.0F && sample.CStickX == 0.0F &&
                 sample.CStickY == 0.0F && !sample.TouchPressed,
             "release clears the overlay source without changing other input owners");
+
+    ThreeDsRecomp::Input::InputFrame physicalFrame;
+    physicalFrame.Hid.Buttons = ThreeDsRecomp::Input::ButtonMask(
+        ThreeDsRecomp::Input::Button::B);
+    physicalFrame.Hid.CirclePadX = 31;
+    physicalFrame.Hid.CirclePadY = -17;
+    physicalFrame.CStick = {22, -9,
+        ThreeDsRecomp::Input::AxisInputKind::Relative};
+    Oot3dNativeGame::MergeAndroidOverlayInput(state.Snapshot(), physicalFrame);
+    Require(physicalFrame.Hid.Buttons == ThreeDsRecomp::Input::ButtonMask(
+                ThreeDsRecomp::Input::Button::B) &&
+                physicalFrame.Hid.CirclePadX == 31 &&
+                physicalFrame.Hid.CirclePadY == -17 &&
+                physicalFrame.CStick.X == 22 && physicalFrame.CStick.Y == -9 &&
+                physicalFrame.CStick.Kind ==
+                    ThreeDsRecomp::Input::AxisInputKind::Relative,
+            "neutral overlay and ReleaseAll preserve the physical controller frame");
+
+    state.SetButton(ThreeDsRecomp::Input::ButtonMask(
+                        ThreeDsRecomp::Input::Button::A), true);
+    state.SetSticks(1.0F, -1.0F, 0.5F, -0.25F);
+    Oot3dNativeGame::MergeAndroidOverlayInput(state.Snapshot(), physicalFrame);
+    Require((physicalFrame.Hid.Buttons & ThreeDsRecomp::Input::ButtonMask(
+                ThreeDsRecomp::Input::Button::A)) != 0 &&
+                (physicalFrame.Hid.Buttons & ThreeDsRecomp::Input::ButtonMask(
+                ThreeDsRecomp::Input::Button::B)) != 0,
+            "overlay button is combined with, not substituted for, physical buttons");
+    Require(physicalFrame.Hid.CirclePadX == 154 &&
+                physicalFrame.Hid.CirclePadY == -154 &&
+                physicalFrame.CStick.X == 77 && physicalFrame.CStick.Y == -39 &&
+                physicalFrame.CStick.Kind ==
+                    ThreeDsRecomp::Input::AxisInputKind::Absolute,
+            "active virtual sticks use normalized 3DS axes and take axis ownership");
+
     std::cout << "Android overlay input state tests passed\n";
 }

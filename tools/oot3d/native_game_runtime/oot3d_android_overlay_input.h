@@ -1,5 +1,7 @@
 #pragma once
 
+#include "three_ds_input.h"
+
 #include <cstdint>
 #include <mutex>
 
@@ -30,6 +32,11 @@ private:
     mutable std::mutex mMutex;
     AndroidOverlayInputSnapshot mState;
 };
+
+// Merge only the overlay source into an already-polled frame. A neutral
+// overlay must never release buttons or axes owned by a physical controller.
+void MergeAndroidOverlayInput(const AndroidOverlayInputSnapshot& overlay,
+                              ThreeDsRecomp::Input::InputFrame& frame) noexcept;
 
 AndroidOverlayInputState& GetAndroidOverlayInputState() noexcept;
 

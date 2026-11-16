@@ -3198,21 +3198,7 @@ PollNativeA32Input(Fast::Fast3dWindow &window,
                                      &pollingState.VirtualMotion);
 #ifdef __ANDROID__
   const auto androidOverlay = GetAndroidOverlayInputState().Snapshot();
-  frame.Hid.Buttons |= androidOverlay.Buttons;
-  constexpr float kNativeStickScale = 154.0F;
-  if (androidOverlay.CirclePadX != 0.0F || androidOverlay.CirclePadY != 0.0F) {
-    frame.Hid.CirclePadX = static_cast<int16_t>(std::lround(
-        androidOverlay.CirclePadX * kNativeStickScale));
-    frame.Hid.CirclePadY = static_cast<int16_t>(std::lround(
-        androidOverlay.CirclePadY * kNativeStickScale));
-  }
-  if (androidOverlay.CStickX != 0.0F || androidOverlay.CStickY != 0.0F) {
-    frame.CStick.X = static_cast<int16_t>(std::lround(
-        androidOverlay.CStickX * kNativeStickScale));
-    frame.CStick.Y = static_cast<int16_t>(std::lround(
-        androidOverlay.CStickY * kNativeStickScale));
-    frame.CStick.Kind = ThreeDsRecomp::Input::AxisInputKind::Absolute;
-  }
+  MergeAndroidOverlayInput(androidOverlay, frame);
 #endif
   // Title touch actions, then the menu pages (bits 8-10).
   for (size_t index = static_cast<size_t>(kFirstNativeTitleAction);

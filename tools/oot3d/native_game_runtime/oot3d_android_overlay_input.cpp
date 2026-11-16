@@ -47,6 +47,26 @@ AndroidOverlayInputSnapshot AndroidOverlayInputState::Snapshot() const noexcept 
     return mState;
 }
 
+void MergeAndroidOverlayInput(const AndroidOverlayInputSnapshot& overlay,
+                              ThreeDsRecomp::Input::InputFrame& frame) noexcept {
+    frame.Hid.Buttons |= overlay.Buttons;
+    constexpr float kNativeStickScale = static_cast<float>(
+        ThreeDsRecomp::Input::kNativeStickMaximum);
+    if (overlay.CirclePadX != 0.0F || overlay.CirclePadY != 0.0F) {
+        frame.Hid.CirclePadX = static_cast<std::int16_t>(
+            std::lround(overlay.CirclePadX * kNativeStickScale));
+        frame.Hid.CirclePadY = static_cast<std::int16_t>(
+            std::lround(overlay.CirclePadY * kNativeStickScale));
+    }
+    if (overlay.CStickX != 0.0F || overlay.CStickY != 0.0F) {
+        frame.CStick.X = static_cast<std::int16_t>(
+            std::lround(overlay.CStickX * kNativeStickScale));
+        frame.CStick.Y = static_cast<std::int16_t>(
+            std::lround(overlay.CStickY * kNativeStickScale));
+        frame.CStick.Kind = ThreeDsRecomp::Input::AxisInputKind::Absolute;
+    }
+}
+
 AndroidOverlayInputState& GetAndroidOverlayInputState() noexcept {
     static AndroidOverlayInputState state;
     return state;
