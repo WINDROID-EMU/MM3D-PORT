@@ -78,6 +78,8 @@ def _copy_tree(root: Path, source: Path, output: Path) -> str:
 def prepare(installation: Path, output: Path, *, manifest_file: str = "process-manifest.json") -> Path:
     root = installation.resolve()
     output = output.resolve()
+    if manifest_file != "process-manifest.json":
+        raise ValueError("Android MM3D packages require process-manifest.json at the installation root")
     repository = Path(__file__).resolve().parents[2]
     if output == repository or output.is_relative_to(repository):
         raise ValueError("Private ROM-derived data must remain outside the source repository")
@@ -109,6 +111,9 @@ def prepare(installation: Path, output: Path, *, manifest_file: str = "process-m
         raise ValueError("MM3D code.bin hash does not match the process manifest")
     if source.get("exheader_sha256") and _hash(inputs["exheader_path"]) != source["exheader_sha256"]:
         raise ValueError("MM3D ExHeader hash does not match the process manifest")
+    expected_romfs_hash = source.get("romfs_image_sha256")
+    if not isinstance(expected_romfs_hash, str) or _hash(inputs["romfs_image_path"]) != expected_romfs_hash:
+        raise ValueError("MM3D RomFS hash does not match the process manifest")
     expected_romfs_size = source.get("romfs_image_file_size")
     if expected_romfs_size is not None and inputs["romfs_image_path"].stat().st_size != expected_romfs_size:
         raise ValueError("MM3D RomFS size does not match the process manifest")

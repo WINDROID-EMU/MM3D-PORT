@@ -30,7 +30,8 @@ import java.util.zip.ZipInputStream;
 /** First-run importer for a privately prepared MM3D data package. */
 public final class TriAevumLauncherActivity extends Activity {
     private static final int REQUEST_MM3D_DATA = 4317;
-    private static final long MAX_UNPACKED_BYTES = 4L * 1024L * 1024L * 1024L;
+    private static final long MAX_UNPACKED_BYTES = 2L * 1024L * 1024L * 1024L;
+    private static final long MAX_ENTRY_BYTES = 1024L * 1024L * 1024L;
     private static final int MAX_ZIP_ENTRIES = 100000;
     private static final ExecutorService IMPORTER = Executors.newSingleThreadExecutor();
     private TextView status;
@@ -208,10 +209,15 @@ public final class TriAevumLauncherActivity extends Activity {
                     if (!directory.isDirectory() && !directory.mkdirs()) throw new IllegalStateException("Cannot create package directory");
                     try (FileOutputStream file = new FileOutputStream(target);
                          BufferedOutputStream output = new BufferedOutputStream(file)) {
+                        long entryBytes = 0;
                         int count;
                         while ((count = zip.read(buffer)) != -1) {
+                            entryBytes += count;
                             total += count;
-                            if (total > MAX_UNPACKED_BYTES) throw new IllegalArgumentException("MM3D package exceeds the 4-GiB safety limit");
+                            if (entryBytes > MAX_ENTRY_BYTES)
+                                throw new IllegalArgumentException("MM3D package entry exceeds the 1-GiB safety limit");
+                            if (total > MAX_UNPACKED_BYTES)
+                                throw new IllegalArgumentException("MM3D package exceeds the 2-GiB safety limit");
                             output.write(buffer, 0, count);
                         }
                         output.flush();
@@ -281,6 +287,9 @@ public final class TriAevumLauncherActivity extends Activity {
             throw new IllegalArgumentException("Manifest paths do not match the prepared MM3D package");
         if (!source.optString("code_bin_sha256").equals(sha256(code)))
             throw new IllegalArgumentException("MM3D code.bin hash does not match its manifest");
+        String expectedRomfsHash = source.optString("romfs_image_sha256", "");
+        if (!expectedRomfsHash.matches("[0-9a-f]{64}") || !expectedRomfsHash.equals(sha256(romfs)))
+            throw new IllegalArgumentException("MM3D RomFS hash does not match its manifest");
         if (source.optLong("code_bin_size", -1) != code.length()
                 || source.optLong("romfs_image_file_size", -1) != romfs.length()
                 || code.length() == 0 || romfs.length() == 0 || exheader.length() < 0x400)

@@ -80,6 +80,14 @@ def sha256(data: bytes) -> str:
     return hashlib.sha256(data).hexdigest()
 
 
+def sha256_file(path: Path) -> str:
+    digest = hashlib.sha256()
+    with path.open("rb") as stream:
+        for chunk in iter(lambda: stream.read(1 << 20), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
 def romfs_service_window(path: Path, file_size: int) -> tuple[int, int]:
     with path.open("rb") as stream:
         prefix = stream.read(4)
@@ -305,6 +313,7 @@ def build_manifest(
             "code_bin_size": len(code),
             "romfs_image_path": str(romfs_image_path.resolve()),
             "romfs_image_file_size": romfs_image_size,
+            "romfs_image_sha256": sha256_file(romfs_image_path),
             "romfs_service_offset": romfs_service_offset,
             "romfs_service_size": romfs_service_size,
             "layout_authority": "CTR ExHeader; page/BSS/stack/TLS semantics verified against Azahar NCCH loader",

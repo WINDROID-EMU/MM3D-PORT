@@ -3,7 +3,7 @@ from pathlib import Path
 import unittest
 import zipfile
 
-from package_mm3d_android_data import package
+from package_mm3d_android_data import MAX_ENTRY_BYTES, package
 
 
 class Mm3dDataPackageTests(unittest.TestCase):
@@ -55,6 +55,17 @@ class Mm3dDataPackageTests(unittest.TestCase):
             stage = self.fixture(Path(temporary))
             with self.assertRaisesRegex(ValueError, "outside the staged data directory"):
                 package(stage, stage / "nested.zip")
+
+    def test_rejects_single_staged_file_over_android_import_limit(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            stage = self.fixture(root)
+            oversized = stage / "game/romfs.bin"
+            with oversized.open("wb") as stream:
+                stream.truncate(MAX_ENTRY_BYTES + 1)
+            with self.assertRaisesRegex(ValueError, "1-GiB safety limit"):
+                package(stage, root / "oversized.zip")
+            self.assertFalse((root / "oversized.zip").exists())
 
 
 if __name__ == "__main__":

@@ -131,9 +131,12 @@ gradle -p "$SRC/ports/android" :app:assembleDebug \
 Install `ports/android/app/build/outputs/apk/debug/app-debug.apk`, then use the
 launcher to choose `mm3d-android-data.zip` from Downloads or another document
 provider. The transfer ZIP contains private game data; do not publish or share
-it, and remove it from shared storage after import if it is no longer needed. The app validates the title ID, launch
-arguments, code hash, ROMFS bounds and ZIP paths before atomically replacing its
-private `mm3d-data` directory; existing save/config/cache state is preserved.
+it, and remove it from shared storage after import if it is no longer needed. The
+preparer requires the process manifest at the installation root and records a
+SHA-256 for the complete RomFS image. The launcher validates the title ID, launch
+arguments, code and RomFS hashes, ROMFS bounds, ZIP paths and 1-GiB per-entry / 2-GiB
+total unpacked limits before atomically replacing its private `mm3d-data` directory;
+existing save/config/cache state is preserved.
 Game data is **not** included in APK assets. Import/launch code is implemented but
 still needs an Android SDK/Gradle build and real-device verification.
 

@@ -36,6 +36,7 @@ class Mm3dAndroidDataTests(unittest.TestCase):
                 "code_bin_size": len(code),
                 "romfs_image_path": "game/romfs.bin",
                 "romfs_image_file_size": len(romfs),
+                "romfs_image_sha256": hashlib.sha256(romfs).hexdigest(),
             },
         }
         (install / "process-manifest.json").write_text(json.dumps(manifest), encoding="utf-8")
@@ -101,6 +102,23 @@ class Mm3dAndroidDataTests(unittest.TestCase):
             self.assertFalse(output.exists())
             with self.assertRaisesRegex(ValueError, "separate staging directory"):
                 prepare(install, install / "stage")
+
+    def test_rejects_nested_android_manifest_and_romfs_hash_mismatch(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            install = self.fixture(root)
+            output = root / "nested-manifest-stage"
+            with self.assertRaisesRegex(ValueError, "at the installation root"):
+                prepare(install, output, manifest_file="nested/process-manifest.json")
+            self.assertFalse(output.exists())
+
+            manifest_path = install / "process-manifest.json"
+            manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+            manifest["source"]["romfs_image_sha256"] = "0" * 64
+            manifest_path.write_text(json.dumps(manifest), encoding="utf-8")
+            with self.assertRaisesRegex(ValueError, "RomFS hash"):
+                prepare(install, output)
+            self.assertFalse(output.exists())
 
     def test_refuses_private_rom_data_inside_repository(self):
         with tempfile.TemporaryDirectory() as temporary:

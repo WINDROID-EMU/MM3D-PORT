@@ -14,6 +14,8 @@ REQUIRED = {
     "game/romfs.bin",
     "data/config/TriAevum.android.json",
 }
+MAX_PACKAGE_BYTES = 2 * 1024 * 1024 * 1024
+MAX_ENTRY_BYTES = 1024 * 1024 * 1024
 
 
 def package(stage: Path, output: Path) -> Path:
@@ -40,6 +42,14 @@ def package(stage: Path, output: Path) -> Path:
         raise FileNotFoundError(f"Staged MM3D data is incomplete: {sorted(missing)}")
     if not any(name.startswith("resources/") for name in found):
         raise FileNotFoundError("Staged MM3D resources are empty")
+    total_bytes = 0
+    for path in files:
+        size = path.stat().st_size
+        if size > MAX_ENTRY_BYTES:
+            raise ValueError(f"Staged MM3D file exceeds the 1-GiB safety limit: {path}")
+        total_bytes += size
+    if total_bytes > MAX_PACKAGE_BYTES:
+        raise ValueError("Staged MM3D package exceeds the 2-GiB safety limit")
     output.parent.mkdir(parents=True, exist_ok=True)
     with zipfile.ZipFile(output, "w", compression=zipfile.ZIP_STORED, allowZip64=True) as archive:
         for path in files:
