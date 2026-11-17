@@ -73,8 +73,9 @@ The MM3D ROM-preparation pipeline can now target `aarch64-linux-android29` and
 emit an ARM64 Android title plugin. Its APK name is `libmm3d_title_aot.so`,
 distinct from the generic/OoT module name, so the launcher refuses the wrong game.
 First build the NDK whole-AOT support archive with `scripts/build-android-native.sh`,
-then locate it in that build tree. From a prepared MM3D setup package (which contains
-the recipe and `include/`):
+then locate it in that build tree. The setup uses `package/include/` when it
+contains the complete header; otherwise it checks the native CMake build's fetched
+`nlohmann_json-src/include/` directory. `--nlohmann-include` can override the path.
 
 ```sh
 export ANDROID_NDK_HOME="$HOME/triaevum-android-tools/android-ndk-r29"
@@ -89,6 +90,7 @@ python3 setup/TriAevum/tools/mm3d/package/mm3d_setup.py \
   --cxx "$NDK_BIN/aarch64-linux-android29-clang++" \
   --ar "$NDK_BIN/llvm-ar" \
   --support-library "$SUPPORT_LIBRARY" \
+  --nlohmann-include "$TRIAEVUM_BUILD_DIR/_deps/nlohmann_json-src/include" \
   --jobs 2
 python3 tools/android/prepare_mm3d_android_data.py \
   --installation "$HOME/mm3d-android-data" \

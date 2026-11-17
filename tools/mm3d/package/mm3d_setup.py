@@ -314,6 +314,25 @@ def translate(work: Path, game: Path) -> None:
     (work / "mm3d_functions.json").write_text(json.dumps(selection))
 
 
+def resolve_nlohmann_include(candidate: Path | None = None) -> Path:
+    """Find the include root containing nlohmann/json.hpp."""
+    if candidate is not None:
+        candidates = [candidate]
+    else:
+        build_dir = Path(os.environ.get("TRIAEVUM_BUILD_DIR", str(REPO.parent / "triaevum-android-build")))
+        candidates = [
+            HERE / "include",
+            build_dir / "_deps" / "nlohmann_json-src" / "include",
+            build_dir / "native" / "_deps" / "nlohmann_json-src" / "include",
+        ]
+    for include in candidates:
+        resolved = include.resolve()
+        if (resolved / "nlohmann" / "json.hpp").is_file():
+            return resolved
+    searched = ", ".join(str(path) for path in candidates)
+    raise FileNotFoundError(f"nlohmann/json.hpp was not found; checked: {searched}")
+
+
 def compile_title(work: Path, args, platform: str) -> Path:
     step("Compiling the native game module (the longest step: 10-40 minutes)")
     env = dict(os.environ, MM3D_TARGET=platform, MM3D_CXX=str(args.cxx), MM3D_AR=str(args.ar),
@@ -323,7 +342,11 @@ def compile_title(work: Path, args, platform: str) -> Path:
         fail("Android builds require --support-library pointing to the ARM64 Android NDK archive.")
     if not support.is_file():
         fail(f"The whole-AOT support library does not exist: {support}")
-    run([sys.executable, MM3D / "mm3d_build_title.py", work, support, HERE / "include", str(args.jobs)], env=env)
+    try:
+        nlohmann_include = resolve_nlohmann_include(args.nlohmann_include)
+    except FileNotFoundError as error:
+        fail(str(error))
+    run([sys.executable, MM3D / "mm3d_build_title.py", work, support, nlohmann_include, str(args.jobs)], env=env)
     plugin_name = ("libtriaevum_title_aot.so" if platform == "android" else
                    "triaevum_title_aot.dll" if platform == "mingw" else
                    "triaevum_title_aot.so")
@@ -342,6 +365,8 @@ def main() -> int:
     parser.add_argument("--ar", type=Path, required=True)
     parser.add_argument("--support-library", type=Path,
                         help="whole-AOT support archive for the selected target (required for Android)")
+    parser.add_argument("--nlohmann-include", type=Path,
+                        help="include root containing nlohmann/json.hpp (defaults to setup or Android CMake headers)")
     parser.add_argument("--jobs", type=int, default=default_jobs())
     parser.add_argument("--no-shader-tour", action="store_true")
     parser.add_argument("--target", choices=("mingw", "linux", "android"),
